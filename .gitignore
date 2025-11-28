@@ -8,9 +8,9 @@
 *.dll
 
 # Build directories
-/build/
-/bin/
-/dist/
+# /build/
+# /bin/
+# /dist/
 
 # Editor and OS files
 .vscode/
