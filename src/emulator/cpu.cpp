@@ -32,12 +32,21 @@ void CPU::run() {
         std::cout << "Starting CPU execution..." << std::endl;
     }
     
-    while (!halted_ && step()) {
-        // Continue execution
+    const uint32_t MAX_CYCLES = 100000;  // Prevent infinite loops
+    uint32_t cycle_count = 0;
+    
+    while (!halted_ && step() && cycle_count < MAX_CYCLES) {
+        cycle_count++;
+        if (cycle_count % 10000 == 0 && debug_mode_) {
+            std::cout << "Executed " << cycle_count << " cycles..." << std::endl;
+        }
     }
     
     if (debug_mode_) {
-        std::cout << "CPU execution stopped. Halted: " << (halted_ ? "Yes" : "No") << std::endl;
+        std::cout << "CPU execution stopped after " << cycle_count << " cycles. Halted: " << (halted_ ? "Yes" : "No") << std::endl;
+        if (cycle_count >= MAX_CYCLES) {
+            std::cout << "Warning: Execution stopped due to cycle limit (possible infinite loop)" << std::endl;
+        }
     }
 }
 
@@ -259,6 +268,24 @@ uint16_t CPU::resolve_operand(const DecodedInstruction& instr, bool is_destinati
             
         case AddressingMode::REGISTER_INDIRECT: {
             uint16_t address = registers_.get_gpr(instr.rs);
+            if (is_destination) {
+                memory_.write_word(address, registers_.get_gpr(instr.rd));
+                return 0;
+            }
+            return memory_.read_word(address);
+        }
+        
+        case AddressingMode::REGISTER_OFFSET: {
+            uint16_t address = registers_.get_gpr(instr.rs) + instr.extra_word;
+            if (is_destination) {
+                memory_.write_word(address, registers_.get_gpr(instr.rd));
+                return 0;
+            }
+            return memory_.read_word(address);
+        }
+        
+        case AddressingMode::PC_RELATIVE: {
+            uint16_t address = registers_.get_pc() + static_cast<int16_t>(instr.extra_word);
             if (is_destination) {
                 memory_.write_word(address, registers_.get_gpr(instr.rd));
                 return 0;
