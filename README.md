@@ -15,7 +15,7 @@ A complete **16-bit CPU simulator** with assembler, emulator, and interactive we
 ## Quick Start Demo
 
 **One-command demo for new users:**
-
+**Note: All commands are for Mac/Linux**
 ```bash
 # Clone the repository
 git clone <https://github.com/JNR-10/software-cpu>
