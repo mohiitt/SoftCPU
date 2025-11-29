@@ -7,7 +7,8 @@ BINDIR = bin
 # Source files
 ASSEMBLER_SOURCES = $(SRCDIR)/assembler/assembler.cpp
 EMULATOR_SOURCES = $(SRCDIR)/emulator/memory.cpp $(SRCDIR)/emulator/registers.cpp \
-                   $(SRCDIR)/emulator/alu.cpp $(SRCDIR)/emulator/cpu.cpp
+				   $(SRCDIR)/emulator/alu.cpp $(SRCDIR)/emulator/cpu.cpp \
+				   $(SRCDIR)/emulator/trace_recorder.cpp
 MAIN_SOURCES = $(SRCDIR)/main.cpp
 TEST_SOURCES = $(SRCDIR)/emulator/test_emulator.cpp
 

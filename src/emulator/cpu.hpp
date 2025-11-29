@@ -6,6 +6,7 @@
 #include "memory.hpp"
 #include "registers.hpp"
 #include "alu.hpp"
+#include "trace_recorder.hpp"
 
 class CPU {
 public:
@@ -46,6 +47,9 @@ public:
     void load_program(const std::vector<uint8_t>& program, uint16_t start_address = 0x8000);
     void run();                    // Run until HALT
     bool step();                   // Execute one instruction, return false if HALT
+
+    // Trace recorder integration
+    void set_trace_recorder(std::shared_ptr<TraceRecorder> recorder) { tracer_ = recorder; }
     
     // CPU state access
     const Registers& get_registers() const { return registers_; }
@@ -105,4 +109,5 @@ private:
     void print_instruction(const DecodedInstruction& instr) const;
     std::string opcode_to_string(Opcode opcode) const;
     std::string mode_to_string(AddressingMode mode) const;
+    std::shared_ptr<TraceRecorder> tracer_;
 };

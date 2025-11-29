@@ -109,6 +109,47 @@ int main(int argc, char** argv) {
         return assemble_file(argv[2], argv[3]);
     } else if (command == "run" && argc == 3) {
         return run_program(argv[2]);
+    } else if (command == "run-trace" && argc == 4) {
+        // run-trace <trace.json> <program.bin>
+        std::string program = argv[2];
+        std::string trace_path = argv[3];
+
+        std::ifstream in(program, std::ios::binary);
+        if (!in) {
+            std::cerr << "Failed to open program file: " << program << "\n";
+            return 1;
+        }
+        std::vector<uint8_t> program_bytes((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+
+        CPU cpu;
+        cpu.set_debug_mode(true);
+        auto tracer = std::make_shared<TraceRecorder>();
+        tracer->set_output_path(trace_path);
+        cpu.set_trace_recorder(tracer);
+        cpu.load_program(program_bytes);
+        cpu.run();
+        return 0;
+    } else if (command == "debug" && argc == 3) {
+        // interactive single-step debug: debug <program.bin>
+        std::string program = argv[2];
+        std::ifstream in(program, std::ios::binary);
+        if (!in) {
+            std::cerr << "Failed to open program file: " << program << "\n";
+            return 1;
+        }
+        std::vector<uint8_t> program_bytes((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+
+        CPU cpu;
+        cpu.set_debug_mode(true);
+        cpu.load_program(program_bytes);
+        // step loop
+        while (!cpu.is_halted()) {
+            std::cout << "Press Enter to step..." << std::endl;
+            std::cin.get();
+            cpu.step();
+            cpu.dump_state();
+        }
+        return 0;
     } else if (command == "test" && argc == 2) {
         return run_test();
     } else {

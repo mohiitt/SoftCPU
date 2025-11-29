@@ -42,6 +42,8 @@ public:
   // I/O callbacks
   void set_output_callback(std::function<void(uint8_t)> callback);
   void set_input_callback(std::function<uint8_t()> callback);
+  // Trace callback for memory writes (byte-level)
+  void set_trace_callback(std::function<void(uint16_t,uint8_t,uint8_t)> callback);
 
   // Timer support
   void tick(); // Increment timer if running
@@ -52,6 +54,7 @@ private:
   std::vector<uint8_t> memory_;
   std::function<void(uint8_t)> output_callback_;
   std::function<uint8_t()> input_callback_;
+  std::function<void(uint16_t,uint8_t,uint8_t)> trace_callback_;
 
   // Timer state
   uint16_t timer_counter_ = 0;

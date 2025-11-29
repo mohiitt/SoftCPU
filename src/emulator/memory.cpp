@@ -29,7 +29,10 @@ void Memory::write_byte(uint16_t address, uint8_t value) {
     handle_io_write(address, value);
     return;
   }
+  uint8_t old = memory_[address];
   memory_[address] = value;
+  // trace callback
+  if (trace_callback_) trace_callback_(address, old, value);
 }
 
 uint16_t Memory::read_word(uint16_t address) {
@@ -80,6 +83,10 @@ void Memory::set_output_callback(std::function<void(uint8_t)> callback) {
 
 void Memory::set_input_callback(std::function<uint8_t()> callback) {
   input_callback_ = callback;
+}
+
+void Memory::set_trace_callback(std::function<void(uint16_t,uint8_t,uint8_t)> callback) {
+  trace_callback_ = callback;
 }
 
 bool Memory::is_io_address(uint16_t address) const {

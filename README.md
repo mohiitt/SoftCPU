@@ -165,3 +165,21 @@ g++ src/main.cpp src/emulator/*.cpp src/assembler/*.cpp src/utils/*.cpp -Iinclud
 
 # Run with an assembly program
 ./build/software_cpu src/programs/fibonacci.asm
+
+## Automated script version
+
+# Builds all scripts
+./scripts/build_all.sh
+
+# General run script
+./scripts/run_general.sh <assembly script>
+
+
+# General run with trace script
+./scripts/run_general_with_trace.sh <assembly script> <json file to create>
+
+# places <json file to create> with timestamp in dir build/traces
+
+# example
+./scripts/run_general_with_trace.sh src/programs/fibonacci.asm fib.json
+

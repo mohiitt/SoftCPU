@@ -2,6 +2,7 @@
 #include <iostream>
 #include <iomanip>
 #include <stdexcept>
+#include "memory.hpp"
 
 CPU::CPU() : halted_(false), debug_mode_(false) {
     reset();
@@ -45,15 +46,42 @@ bool CPU::step() {
     
     try {
         // Fetch-Decode-Execute cycle
+        static uint32_t cycle_count = 0;
         fetch();
         DecodedInstruction instr = decode();
-        
+
+        // Start trace cycle
+        if (tracer_) {
+            tracer_->start_cycle(cycle_count, registers_.get_pc());
+            tracer_->record_registers(registers_);
+            DecodedInstrView dv;
+            dv.opcode = static_cast<uint8_t>(instr.opcode);
+            dv.mode = static_cast<uint8_t>(instr.mode);
+            dv.rd = instr.rd;
+            dv.rs = instr.rs;
+            dv.extra_word = instr.extra_word;
+            dv.has_extra_word = instr.has_extra_word;
+            tracer_->record_decoded(dv);
+
+            // attach memory trace callback for this cycle
+            memory_.set_trace_callback([this](uint16_t addr, uint8_t oldv, uint8_t newv){
+                MemWriteEvent ev{addr, oldv, newv};
+                if (tracer_) tracer_->record_mem_write(ev);
+            });
+        }
+
         if (debug_mode_) {
             print_instruction(instr);
         }
-        
+
         execute(instr);
-        
+
+        // finalize trace entry
+        if (tracer_) {
+            tracer_->end_cycle();
+        }
+
+        ++cycle_count;
         return !halted_;
     } catch (const std::exception& e) {
         std::cerr << "CPU Error: " << e.what() << std::endl;
