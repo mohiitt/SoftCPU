@@ -2,6 +2,7 @@
 #include <iomanip>
 #include <iostream>
 #include <filesystem>
+#include <sstream>
 
 TraceRecorder::TraceRecorder() {
     path_ = "build/traces/trace.json";
