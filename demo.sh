@@ -49,8 +49,6 @@ echo -e "${YELLOW} Step 3: Generating execution traces...${NC}"
 mkdir -p build/traces
 
 # Generate traces for different programs
-echo "  → Creating integration test trace..."
-./scripts/run_general_with_trace.sh tests/assembly/test_integration.asm integration_demo.json
 
 echo "  → Creating Fibonacci sequence trace..."
 ./scripts/run_general_with_trace.sh src/programs/fibonacci.asm fibonacci_demo.json
@@ -58,8 +56,17 @@ echo "  → Creating Fibonacci sequence trace..."
 echo "  → Creating Hello World trace..."
 ./scripts/run_general_with_trace.sh src/programs/hello_world.asm hello_demo.json
 
+echo "  → Creating Timer example trace..."
+./scripts/run_general_with_trace.sh src/programs/timer_example.asm timer_demo.json
+
+echo "  → Creating integration test trace..."
+./scripts/run_general_with_trace.sh tests/assembly/test_integration.asm integration_demo.json
+
 echo "  → Creating comprehensive instruction test trace..."
 ./scripts/run_general_with_trace.sh tests/assembly/test_phase4b.asm phase4b_demo.json
+
+echo "  → Creating branch flags trace..."
+./scripts/run_general_with_trace.sh tests/assembly/test_branch_flags.asm branch_flags_demo.json
 
 echo -e "${GREEN} All traces generated successfully!${NC}"
 echo ""

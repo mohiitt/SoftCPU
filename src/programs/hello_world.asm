@@ -1,30 +1,24 @@
-; Simplified Hello World Program
-; Note: This version uses only currently implemented instructions
-; Full version requires MOV, LOAD, STORE, and memory-mapped I/O from Phase 4B
+; Hello World Program
+; Outputs "Hello, World!" to terminal using memory-mapped I/O
 
 .org 0x8000
 
 start:
-    ; For now, just demonstrate that the string is assembled correctly
-    ; Full implementation requires:
-    ; - MOV instruction to load addresses
-    ; - LOAD instruction to read characters
-    ; - STORE or OUT instruction for output
-    ; - Memory-mapped I/O at 0xF000
+    MOV R0, msg         ; Load address of message into R0
+    MOV R1, #0xF000     ; Load terminal output address into R1
+
+loop:
+    LOAD R2, [R0]       ; Load character from message address
+    CMP R2, #0          ; Check for null terminator
+    JZ done             ; If zero, we are done
     
-    ; Placeholder: Just halt for now
+    STORE R2, [R1]      ; Write character to terminal
+    ADD R0, #1          ; Increment message address
+    JMP loop            ; Repeat
+
+done:
     HALT
 
 msg:
     .string "Hello, World!"
 
-; TODO Phase 4B: Implement loop to output each character
-; loop:
-;     LOAD R2, [R0]       ; Load character
-;     CMP R2, #0          ; Check for null
-;     JZ done
-;     STORE R2, [R1]      ; Output to 0xF000
-;     ADD R0, #1
-;     JMP loop
-; done:
-;     HALT
