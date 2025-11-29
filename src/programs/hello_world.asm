@@ -4,9 +4,6 @@
 
 .org 0x8000
 
-msg:
-    .string "Hello, World!"
-
 start:
     ; For now, just demonstrate that the string is assembled correctly
     ; Full implementation requires:
@@ -17,6 +14,9 @@ start:
     
     ; Placeholder: Just halt for now
     HALT
+
+msg:
+    .string "Hello, World!"
 
 ; TODO Phase 4B: Implement loop to output each character
 ; loop:
