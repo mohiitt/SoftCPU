@@ -100,12 +100,15 @@ make all
 make test
 
 # Assemble a program
+dos2unix ./bin/software-cpu assemble src/programs/fibonacci.asm build/fib.bin
 ./bin/software-cpu assemble src/programs/fibonacci.asm build/fib.bin
 
 # Run a program
+dos2unix ./bin/software-cpu run build/fib.bin
 ./bin/software-cpu run build/fib.bin
 
 # Interactive debugging
+dos2unix ./bin/software-cpu debug build/fib.bin
 ./bin/software-cpu debug build/fib.bin
 ```
 
@@ -113,12 +116,15 @@ make test
 
 ```bash
 # Test integration (simple ADD operations)
+dos2unix ./scripts/run_general.sh tests/assembly/test_integration.asm
 ./scripts/run_general.sh tests/assembly/test_integration.asm
 
 # Run Fibonacci calculation
+dos2unix ./scripts/run_general.sh src/programs/fibonacci.asm
 ./scripts/run_general.sh src/programs/fibonacci.asm
 
 # Test comprehensive instruction set
+dos2unix ./scripts/run_general.sh tests/assembly/test_phase4b.asm
 ./scripts/run_general.sh tests/assembly/test_phase4b.asm
 ```
 
@@ -126,6 +132,7 @@ make test
 
 ```bash
 # Generate execution trace
+dos2unix ./scripts/run_general_with_trace.sh src/programs/fibonacci.asm fib_trace.json
 ./scripts/run_general_with_trace.sh src/programs/fibonacci.asm fib_trace.json
 
 # Start trace viewer
@@ -178,8 +185,10 @@ make clean        # Clean build artifacts
 make test
 
 # Integration tests
+dos2unix ./scripts/run_general.sh tests/assembly/test_integration.asm
 ./scripts/run_general.sh tests/assembly/test_integration.asm
 
 # Error handling tests
+dos2unix ./scripts/run_general.sh tests/assembly/test_error.asm
 ./scripts/run_general.sh tests/assembly/test_error.asm
 ```
