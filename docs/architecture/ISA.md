@@ -3,14 +3,6 @@
 
 This document describes the Instruction Set Architecture of the 16-bit Software CPU.
 
-It summarizes:
-
-- Registers and flags
-- Instruction word format
-- Addressing modes
-- Core opcode set
-
----
 
 ## 1. Registers
 
@@ -39,7 +31,7 @@ Total programmer-visible registers:
 
 - `R0–R3`, `PC`, `SP`, `FLAGS`.
 
-### 1.2 Internal (Microarchitectural) Registers
+### 1.2 Internal Registers
 
 These are used internally by the CPU implementation:
 
@@ -128,36 +120,9 @@ MODE (binary)  Meaning
 110–111        Reserved
 ```
 
-### 4.1 Register Mode (`MODE = 000`)
-
-- Operands are in registers, e.g. `ADD R0, R1`.
-
-### 4.2 Immediate Mode (`MODE = 001`)
-
-- Next word is a 16-bit constant, e.g. `ADD R0, #10`.
-
-### 4.3 Direct Memory Mode (`MODE = 010`)
-
-- Next word is a 16-bit address, e.g. `LOAD R1, [0x2000]`.
-
-### 4.4 Register Indirect Mode (`MODE = 011`)
-
-- Effective address in a register, e.g. `LOAD R0, [R1]`.
-
-### 4.5 Register + Offset Mode (`MODE = 100`)
-
-- Effective address = `R[RS] + sign_extend(offset16)`.
-
-### 4.6 PC-Relative Mode (`MODE = 101`)
-
-- Effective address = `PC + sign_extend(offset16)`.
-- Primarily for branches.
-
----
-
 ## 5. Opcode Summary
 
-The CPU supports a small, orthogonal instruction set.
+The CPU supports a small instruction set.
 
 ```text
 OPCODE  Dec  Mnemonic  Description
@@ -197,6 +162,4 @@ OPCODE  Dec  Mnemonic  Description
 
 11001–11111           Reserved for future use
 ```
-
-More detailed per-instruction semantics (valid addressing modes, flag updates) can be derived from this table and the CPU reference documentation.
 

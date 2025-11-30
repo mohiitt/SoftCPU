@@ -9,11 +9,6 @@
 #include <unordered_map>
 #include <vector>
 
-//   1) Tokenize each source line into simple tokens
-//   2) Parse tokens into a Line struct (optional label, op, operands)
-//   3) Pass 1: assign word addresses and collect label definitions
-//   4) Pass 2: encode instructions/directives into 16-bit words
-//   5) Return a vector<uint8_t> with little-endian words
 
 namespace {
 

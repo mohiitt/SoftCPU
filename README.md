@@ -135,10 +135,9 @@ dos2unix ./scripts/run_general.sh tests/assembly/test_phase4b.asm
 dos2unix ./scripts/run_general_with_trace.sh src/programs/fibonacci.asm fib_trace.json
 ./scripts/run_general_with_trace.sh src/programs/fibonacci.asm fib_trace.json
 
-# Start trace viewer
-cd trace_viewer
-python3 -m http.server 8000
-# Open http://localhost:8000 and load the trace file
+#You can view the trace in 2 places:
+#1. The command line
+#2. build/traces/programname_time.json
 ```
 
 ## Example Programs
@@ -159,9 +158,9 @@ The web-based trace viewer provides:
 - **Interactive timeline** with slider control
 
 ### Using the Trace Viewer
-1. Generate a trace file using `run_general_with_trace.sh`
-2. Start the web server in `trace_viewer/`
-3. Load the JSON trace file in your browser found in `build/traces`
+1. Run the demo.sh file
+2. Auto starts the webserver
+3. Select which program to trace
 4. Use the slider to step through execution cycles
 5. Watch registers and instructions change in real-time
 

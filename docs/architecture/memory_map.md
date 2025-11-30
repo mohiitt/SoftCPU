@@ -50,9 +50,6 @@ The emulator will enforce any special behavior associated with these regions (e.
 - The emulator can load assembled programs into this region.
 - A typical convention is to place the entry point at:
   - `PC = 0x8000` at reset/startup.
-
-The precise layout within this region (code vs. read-only data) is determined by the assembler/linker or loader.
-
 ---
 
 ## 4. Memory-Mapped I/O (0xF000–0xF0FF)
@@ -82,9 +79,6 @@ The top of memory is reserved for future extensions such as:
 - Reset vector (initial `PC` value)
 - ROM or fixed configuration data
 
-One possible convention is to store a reset vector at:
 
-- `0xFFFC–0xFFFD`: 16-bit start address loaded into `PC` at reset
 
-For Phase 1 and initial emulator implementations, this region may simply be unused or treated as read-only.
 
