@@ -28,6 +28,8 @@ struct Token {
     Comma,
     Colon,
     Hash,
+    LBracket,
+    RBracket,
   } type;
   std::string text;
 };
@@ -82,6 +84,16 @@ std::vector<Token> tokenize_line(const std::string &line) {
     }
     if (c == '#') {
       tokens.push_back({Token::Type::Hash, "#"});
+      ++i;
+      continue;
+    }
+    if (c == '[') {
+      tokens.push_back({Token::Type::LBracket, "["});
+      ++i;
+      continue;
+    }
+    if (c == ']') {
+      tokens.push_back({Token::Type::RBracket, "]"});
       ++i;
       continue;
     }
@@ -167,7 +179,7 @@ std::vector<Token> tokenize_line(const std::string &line) {
 // Operand in a parsed line: register, immediate (#num), label reference,
 // or plain number (for .word / absolute addresses).
 struct Operand {
-  enum class Kind { Reg, Imm, Label, Number } kind;
+  enum class Kind { Reg, Imm, Label, Number, IndirectReg, Direct } kind;
   std::string text;
 };
 
@@ -331,6 +343,39 @@ Line parse_line_tokens(const std::vector<Token> &tokens) {
       opnd.kind = Operand::Kind::Label;
       opnd.text = tokens[idx].text;
       ++idx;
+    } else if (tokens[idx].type == Token::Type::LBracket) {
+      // Indirect addressing: [Reg] or [Addr]
+      ++idx;
+      if (idx >= tokens.size()) {
+        throw std::runtime_error("Expected register or address after '['");
+      }
+
+      if (tokens[idx].type == Token::Type::Register) {
+        opnd.kind = Operand::Kind::IndirectReg;
+        opnd.text = tokens[idx].text;
+        ++idx;
+      } else if (tokens[idx].type == Token::Type::Hash) {
+        // [#123] -> Direct
+        ++idx;
+        if (idx >= tokens.size() || tokens[idx].type != Token::Type::Number) {
+          throw std::runtime_error("Expected number after '#'");
+        }
+        opnd.kind = Operand::Kind::Direct;
+        opnd.text = tokens[idx].text;
+        ++idx;
+      } else if (tokens[idx].type == Token::Type::Identifier) {
+        // [Label] -> Direct
+        opnd.kind = Operand::Kind::Direct; // Treat label as direct address
+        opnd.text = tokens[idx].text;
+        ++idx;
+      } else {
+        throw std::runtime_error("Unsupported indirect addressing mode");
+      }
+
+      if (idx >= tokens.size() || tokens[idx].type != Token::Type::RBracket) {
+        throw std::runtime_error("Expected ']'");
+      }
+      ++idx;
     } else {
       throw std::runtime_error("Unsupported operand token");
     }
@@ -477,11 +522,15 @@ std::uint16_t get_instruction_size(const std::string &mnemonic, const Line &l) {
 
   // Arithmetic/logic/data movement instructions
   // Size depends on addressing mode
-  if (l.operands.size() >= 2 && l.operands[1].kind == Operand::Kind::Imm) {
-    return 4; // 2 bytes instruction + 2 bytes immediate
+  if (l.operands.size() >= 2) {
+    if (l.operands[1].kind == Operand::Kind::Imm ||
+        l.operands[1].kind == Operand::Kind::Label ||
+        l.operands[1].kind == Operand::Kind::Direct) {
+      return 4; // 2 bytes instruction + 2 bytes immediate/address
+    }
   }
 
-  // Register mode or single operand
+  // Register mode, Indirect Register mode, or single operand
   return 2;
 }
 
@@ -720,6 +769,32 @@ std::vector<std::uint8_t> assemble(const std::string &source) {
         bytes.push_back(static_cast<std::uint8_t>((instr >> 8) & 0xFF));
         bytes.push_back(static_cast<std::uint8_t>(imm & 0xFF));
         bytes.push_back(static_cast<std::uint8_t>((imm >> 8) & 0xFF));
+      } else if (l.operands[1].kind == Operand::Kind::IndirectReg) {
+        // Register Indirect mode: [Reg]
+        mode = 3; // Mode 3 = Register Indirect
+        rs = reg_id_from_name(l.operands[1].text);
+        std::uint16_t instr = make_instr_word(opcode, mode, rd, rs);
+        bytes.push_back(static_cast<std::uint8_t>(instr & 0xFF));
+        bytes.push_back(static_cast<std::uint8_t>((instr >> 8) & 0xFF));
+      } else if (l.operands[1].kind == Operand::Kind::Direct) {
+        // Direct mode: [#Addr] or [Label]
+        mode = 2; // Mode 2 = Direct
+        std::uint16_t addr;
+        if (std::isdigit(l.operands[1].text[0])) {
+          addr = parse_number16(l.operands[1].text);
+        } else {
+          auto it = symbols.find(l.operands[1].text);
+          if (it == symbols.end()) {
+            throw std::runtime_error(error_at_line(
+                l.line_number, "Undefined label: " + l.operands[1].text));
+          }
+          addr = it->second;
+        }
+        std::uint16_t instr = make_instr_word(opcode, mode, rd, 0);
+        bytes.push_back(static_cast<std::uint8_t>(instr & 0xFF));
+        bytes.push_back(static_cast<std::uint8_t>((instr >> 8) & 0xFF));
+        bytes.push_back(static_cast<std::uint8_t>(addr & 0xFF));
+        bytes.push_back(static_cast<std::uint8_t>((addr >> 8) & 0xFF));
       } else {
         throw std::runtime_error(error_at_line(
             l.line_number, "Unsupported operand type for " + l.op));

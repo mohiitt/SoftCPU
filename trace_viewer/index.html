@@ -1,19 +1,90 @@
 <!doctype html>
 <html>
+
 <head>
   <meta charset="utf-8" />
   <title>Software CPU Trace Viewer</title>
   <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
-  <h1>CPU Trace Viewer</h1>
-  <input id="file" type="file" />
-  <div id="controls">
-    <input id="slider" type="range" min="0" max="0" value="0" />
-    <span id="cycle">Cycle: 0</span>
+  <div class="container">
+    <div id="trace-selection">
+      <div class="hero-section">
+        <h1>🔧 Software CPU Trace Viewer</h1>
+        <p class="hero-description">
+          Interactive visualization tool for exploring CPU execution traces.
+          Step through each cycle, inspect registers, and watch your programs execute in real-time.
+        </p>
+      </div>
+      <div class="trace-selection-section">
+        <h2>📂 Available Execution Traces</h2>
+        <p class="section-description">Select a trace to begin visualization</p>
+        <div id="trace-list" class="trace-grid">
+          <p>Loading available traces...</p>
+        </div>
+      </div>
+    </div>
+    <div id="viewer-container" class="hidden">
+      <div class="header-controls">
+        <button id="back-btn" class="secondary-btn">← Back to Traces</button>
+        <h2 id="current-trace-name"></h2>
+        <div class="stats">
+          <span id="total-cycles">Total Cycles: 0</span>
+          <span id="progress-percent">Progress: 0%</span>
+        </div>
+      </div>
+      <div id="controls" class="control-panel">
+        <div class="playback-controls">
+          <button id="first-btn" class="control-btn" title="First Cycle">⏮️</button>
+          <button id="prev-btn" class="control-btn" title="Previous Cycle">⏪</button>
+          <button id="play-pause-btn" class="control-btn primary" title="Play/Pause">▶️ Run</button>
+          <button id="next-btn" class="control-btn" title="Next Cycle">⏩</button>
+          <button id="last-btn" class="control-btn" title="Last Cycle">⏭️</button>
+          <button id="reset-btn" class="control-btn danger" title="Reset to Start">🔄 Reset</button>
+        </div>
+        <div class="speed-control">
+          <label for="speed-select">Speed:</label>
+          <select id="speed-select">
+            <option value="2000">0.5x (Slow)</option>
+            <option value="1000" selected>1x (Normal)</option>
+            <option value="500">2x (Fast)</option>
+            <option value="250">4x (Very Fast)</option>
+            <option value="100">10x (Ultra Fast)</option>
+            <option value="0">Max Speed</option>
+          </select>
+        </div>
+      </div>
+      <div class="slider-section">
+        <div class="slider-container">
+          <label for="slider">Execution Cycle</label>
+          <input id="slider" type="range" min="0" max="0" value="0" />
+        </div>
+        <div class="cycle-display">
+          <span id="cycle">Cycle: 0 / 0</span>
+        </div>
+      </div>
+      <div class="dashboard">
+        <div class="panel registers-panel">
+          <h3>📊 Registers & Flags</h3>
+          <div id="registers"></div>
+        </div>
+        <div class="panel instruction-panel">
+          <h3>⚙️ Current Instruction</h3>
+          <div id="instr"></div>
+        </div>
+        <div class="panel memory-panel">
+          <h3>💾 Memory Operations</h3>
+          <div id="mem"></div>
+        </div>
+      </div>
+      <div class="execution-log-panel">
+        <h3>📜 Execution History (Last 10 Instructions)</h3>
+        <div id="execution-log"></div>
+      </div>
+    </div>
   </div>
-  <div id="registers"></div>
-  <div id="instr"></div>
-  <script src="script.js"></script>
+  <script src="viewer.js"></script>
 </body>
+
 </html>

@@ -9,8 +9,8 @@
 *.app
 
 Build directories
-build/
-bin/
+/build
+/bin
 
 # Editor and OS files
 .vscode/
