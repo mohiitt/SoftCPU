@@ -1,24 +1,23 @@
-; Hello World Program
-; Outputs "Hello, World!" to terminal using memory-mapped I/O
-
 .org 0x8000
-
 start:
-    MOV R0, msg         ; Load address of message into R0
-    MOV R1, #0xF000     ; Load terminal output address into R1
+    MOV R0, msg          ; Load message address
+    MOV R1, #0xF000      ; Terminal output address
+    MOV R3, #0x9000      ; Memory buffer address
 
 loop:
-    LOAD R2, [R0]       ; Load character from message address
-    CMP R2, #0          ; Check for null terminator
-    JZ done             ; If zero, we are done
-    
-    STORE R2, [R1]      ; Write character to terminal
-    ADD R0, #1          ; Increment message address
-    JMP loop            ; Repeat
+    LOAD R2, [R0]        ; Load character
+    CMP R2, #0
+    JZ done
+
+    STORE R2, [R3]       ; Save to memory buffer (new memory write)
+    ADD R3, #1
+
+    STORE R2, [R1]       ; Output to terminal
+    ADD R0, #1
+    JMP loop
 
 done:
     HALT
 
 msg:
     .string "Hello, World!"
-

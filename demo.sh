@@ -51,42 +51,42 @@ mkdir -p build/traces
 # Generate traces for different programs
 
 echo "  → Creating Fibonacci sequence trace..."
-./scripts/run_general_with_trace.sh src/programs/fibonacci.asm fibonacci_demo.json
+./scripts/run_general_with_trace.sh src/programs/fibonacci.asm Fibonacci_sequence.json
 
 echo "  → Creating Hello World trace..."
-./scripts/run_general_with_trace.sh src/programs/hello_world.asm hello_demo.json
+./scripts/run_general_with_trace.sh src/programs/hello_world.asm Hello_world.json
 
 echo "  → Creating Timer example trace..."
-./scripts/run_general_with_trace.sh src/programs/timer_example.asm timer_demo.json
+./scripts/run_general_with_trace.sh src/programs/timer_example.asm Timer_example.json
 
 echo "  → Creating integration test trace..."
-./scripts/run_general_with_trace.sh tests/assembly/test_integration.asm integration_demo.json
+./scripts/run_general_with_trace.sh tests/assembly/test_integration.asm Integration_test.json
 
 echo "  → Creating comprehensive instruction test trace..."
-./scripts/run_general_with_trace.sh tests/assembly/test_phase4b.asm phase4b_demo.json
+./scripts/run_general_with_trace.sh tests/assembly/test_phase4b.asm Comprehensive_instruction_test.json
 
 echo "  → Creating branch flags trace..."
-./scripts/run_general_with_trace.sh tests/assembly/test_branch_flags.asm branch_flags_demo.json
+./scripts/run_general_with_trace.sh tests/assembly/test_branch_flags.asm Branch_flags_test.json
 
 echo -e "${GREEN} All traces generated successfully!${NC}"
 echo ""
 
-# Step 4: Show available traces
-echo -e "${YELLOW} Generated trace files:${NC}"
-ls -la build/traces/*.json | while read line; do
-    echo "  $line"
+# Generate trace manifest
+echo -e "${YELLOW} Generating trace manifest...${NC}"
+echo "[" > build/traces/traces.json
+first=true
+for f in build/traces/*.json; do
+    if [ "$f" != "build/traces/traces.json" ]; then
+        if [ "$first" = true ]; then
+            first=false
+        else
+            echo "," >> build/traces/traces.json
+        fi
+        filename=$(basename "$f")
+        echo "  \"$filename\"" >> build/traces/traces.json
+    fi
 done
-echo ""
-
-# Step 5: Test error handling
-echo -e "${YELLOW} Step 4: Testing error handling...${NC}"
-echo "  → Testing assembler error detection..."
-if ./scripts/run_general.sh tests/assembly/test_error.asm 2>&1 | grep -q "Assembly error"; then
-    echo -e "${GREEN} Error handling works correctly!${NC}"
-else
-    echo -e "${RED} Error handling test unexpected result${NC}"
-fi
-echo ""
+echo "]" >> build/traces/traces.json
 
 # Step 6: Launch trace viewer
 echo -e "${YELLOW} Step 5: Launching interactive trace viewer...${NC}"
@@ -94,14 +94,7 @@ echo ""
 echo -e "${GREEN} DEMO INSTRUCTIONS:${NC}"
 echo -e "${GREEN}===================${NC}"
 echo "1. Your browser will open to the CPU Trace Viewer"
-echo "2. Click 'Choose File' and select a trace file from the list below:"
-echo ""
-echo -e "${BLUE} Recommended demo order:${NC}"
-echo "   • integration_demo_*.json  → Simple ADD operations (good starting point)"
-echo "   • fibonacci_demo_*.json   → Mathematical computation with loops"
-echo "   • hello_demo_*.json       → Memory-mapped I/O demonstration"
-echo "   • phase4b_demo_*.json     → Complex instructions (PUSH/POP/CALL/RET)"
-echo ""
+echo "2. Select a trace from the list to visualize it"
 echo "3. Use the slider to step through execution cycles"
 echo "4. Watch registers and instructions change in real-time"
 echo "5. Press Ctrl+C in this terminal to stop the demo"
@@ -115,28 +108,28 @@ elif command -v python &> /dev/null; then
     PYTHON_CMD="python -m SimpleHTTPServer 8000"
 else
     echo -e "${RED} Error: Python not found. Please install Python to run the web server.${NC}"
-    echo "Alternatively, you can manually serve the trace_viewer directory with any web server."
+    echo "Alternatively, you can manually serve the project root with any web server."
     exit 1
 fi
 
-# Change to trace viewer directory
-cd trace_viewer
+# Serve from project root
+# cd trace_viewer  <-- Removed this line
 
 # Try to open browser automatically
 if command -v open &> /dev/null; then
     # macOS
-    sleep 2 && open http://localhost:8000 &
+    sleep 2 && open http://localhost:8000/trace_viewer/ &
 elif command -v xdg-open &> /dev/null; then
     # Linux
-    sleep 2 && xdg-open http://localhost:8000 &
+    sleep 2 && xdg-open http://localhost:8000/trace_viewer/ &
 elif command -v start &> /dev/null; then
     # Windows
-    sleep 2 && start http://localhost:8000 &
+    sleep 2 && start http://localhost:8000/trace_viewer/ &
 fi
 
 echo ""
-echo -e "${GREEN} Trace viewer running at: http://localhost:8000${NC}"
-echo -e "${GREEN} Trace files location: ../build/traces/${NC}"
+echo -e "${GREEN} Trace viewer running at: http://localhost:8000/trace_viewer/${NC}"
+echo -e "${GREEN} Trace files location: build/traces/${NC}"
 echo ""
 echo -e "${YELLOW}Press Ctrl+C to stop the demo${NC}"
 echo ""
