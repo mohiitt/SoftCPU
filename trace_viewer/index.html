@@ -34,36 +34,7 @@
           <span id="progress-percent">Progress: 0%</span>
         </div>
       </div>
-      <div id="controls" class="control-panel">
-        <div class="playback-controls">
-          <button id="first-btn" class="control-btn" title="First Cycle">⏮️</button>
-          <button id="prev-btn" class="control-btn" title="Previous Cycle">⏪</button>
-          <button id="play-pause-btn" class="control-btn primary" title="Play/Pause">▶️ Run</button>
-          <button id="next-btn" class="control-btn" title="Next Cycle">⏩</button>
-          <button id="last-btn" class="control-btn" title="Last Cycle">⏭️</button>
-          <button id="reset-btn" class="control-btn danger" title="Reset to Start">🔄 Reset</button>
-        </div>
-        <div class="speed-control">
-          <label for="speed-select">Speed:</label>
-          <select id="speed-select">
-            <option value="2000">0.5x (Slow)</option>
-            <option value="1000" selected>1x (Normal)</option>
-            <option value="500">2x (Fast)</option>
-            <option value="250">4x (Very Fast)</option>
-            <option value="100">10x (Ultra Fast)</option>
-            <option value="0">Max Speed</option>
-          </select>
-        </div>
-      </div>
-      <div class="slider-section">
-        <div class="slider-container">
-          <label for="slider">Execution Cycle</label>
-          <input id="slider" type="range" min="0" max="0" value="0" />
-        </div>
-        <div class="cycle-display">
-          <span id="cycle">Cycle: 0 / 0</span>
-        </div>
-      </div>
+      <!-- Dashboard now includes controls as a panel -->
       <div class="dashboard">
         <div class="panel registers-panel">
           <h3>📊 Registers & Flags</h3>
@@ -76,6 +47,44 @@
         <div class="panel memory-panel">
           <h3>💾 Memory Operations</h3>
           <div id="mem"></div>
+        </div>
+        <div class="panel button-panel">
+          <h3>⚙️ Controls</h3>
+          <div class="control-panel">
+            <div class="playback-controls">
+              <button id="first-btn" class="control-btn" title="First Cycle">⏮️</button>
+              <button id="prev-btn" class="control-btn" title="Previous Cycle">⏪</button>
+              <button id="play-pause-btn" class="control-btn primary" title="Play/Pause">▶️ Run</button>
+              <button id="next-btn" class="control-btn" title="Next Cycle">⏩</button>
+              <button id="last-btn" class="control-btn" title="Last Cycle">⏭️</button>
+              <button id="reset-btn" class="control-btn danger" title="Reset to Start">🔄 Reset</button>
+            </div>
+            <div class="speed-control">
+              <label for="speed-select">Speed:</label>
+              <select id="speed-select">
+                <option value="2000">0.5x (Slow)</option>
+                <option value="1000" selected>1x (Normal)</option>
+                <option value="500">2x (Fast)</option>
+                <option value="250">4x (Very Fast)</option>
+                <option value="100">10x (Ultra Fast)</option>
+                <option value="0">Max Speed</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <!-- End of dashboard row -->
+        <div class="slider-section">
+          <div class="slider-container">
+            <label for="slider">Execution Cycle</label>
+            <input id="slider" type="range" min="0" max="0" value="0" />
+          </div>
+          <div class="cycle-display">
+            <span id="cycle">Cycle: 0 / 0</span>
+          </div>
+        </div>
+        <div class="panel code-panel">
+          <h3>📝 Program Code</h3>
+          <div id="code-view"></div>
         </div>
       </div>
       <div class="execution-log-panel">

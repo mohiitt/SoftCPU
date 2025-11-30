@@ -539,9 +539,18 @@ std::string error_at_line(int line_num, const std::string &message) {
 
 } // namespace
 
-std::vector<std::uint8_t> assemble(const std::string &source) {
+std::vector<std::uint8_t> assemble(const std::string &source,
+                                   std::vector<SourceMapEntry> *out_map) {
   std::istringstream iss(source);
   std::string raw_line;
+
+  std::vector<std::string> raw_source_lines;
+  {
+    std::istringstream tmp_iss(source);
+    std::string s;
+    while (std::getline(tmp_iss, s))
+      raw_source_lines.push_back(s);
+  }
 
   std::vector<Line> lines;
   int line_num = 0;
@@ -625,16 +634,16 @@ std::vector<std::uint8_t> assemble(const std::string &source) {
   // Pass 2: encode
   std::vector<std::uint8_t> bytes;
   for (std::size_t i = 0; i < lines.size(); ++i) {
+    std::size_t start_size = bytes.size();
     const Line &l = lines[i];
     std::uint16_t cur_addr = line_addr[i];
-    if (l.op.empty()) {
-      continue;
-    }
 
-    if (l.is_directive) {
-      if (iequals(l.op, ".ORG"))
-        continue;
-      if (iequals(l.op, ".WORD")) {
+    if (l.op.empty()) {
+      // No code
+    } else if (l.is_directive) {
+      if (iequals(l.op, ".ORG")) {
+        // No code
+      } else if (iequals(l.op, ".WORD")) {
         if (l.operands.size() != 1)
           throw std::runtime_error(".word expects one operand");
         std::uint16_t v;
@@ -658,142 +667,153 @@ std::vector<std::uint8_t> assemble(const std::string &source) {
           bytes.push_back(0);
         }
       }
-      continue;
-    }
-
-    // Get opcode
-    std::uint8_t opcode;
-    try {
-      opcode = get_opcode(l.op);
-    } catch (const std::exception &e) {
-      throw std::runtime_error(error_at_line(l.line_number, e.what()));
-    }
-
-    std::uint8_t mode = 0;
-    std::uint8_t rd = 0;
-    std::uint8_t rs = 0;
-
-    // NOP, HALT, RET - no operands
-    if (opcode == 0 || opcode == 1 || opcode == 20) {
-      std::uint16_t instr = make_instr_word(opcode, 0, 0, 0);
-      bytes.push_back(static_cast<std::uint8_t>(instr & 0xFF));
-      bytes.push_back(static_cast<std::uint8_t>((instr >> 8) & 0xFF));
-    }
-    // PUSH, POP - single register operand
-    else if (opcode == 21 || opcode == 22) {
-      if (l.operands.size() != 1 || l.operands[0].kind != Operand::Kind::Reg) {
-        throw std::runtime_error(error_at_line(
-            l.line_number, l.op + " expects one register operand"));
+    } else {
+      // Get opcode
+      std::uint8_t opcode;
+      try {
+        opcode = get_opcode(l.op);
+      } catch (const std::exception &e) {
+        throw std::runtime_error(error_at_line(l.line_number, e.what()));
       }
-      rd = reg_id_from_name(l.operands[0].text);
-      std::uint16_t instr = make_instr_word(opcode, 0, rd, 0);
-      bytes.push_back(static_cast<std::uint8_t>(instr & 0xFF));
-      bytes.push_back(static_cast<std::uint8_t>((instr >> 8) & 0xFF));
-    }
-    // Jumps and CALL - PC-relative with offset
-    else if (opcode >= 13 && opcode <= 19) {
-      if (l.operands.size() != 1) {
-        throw std::runtime_error(
-            error_at_line(l.line_number, l.op + " expects one operand"));
+
+      std::uint8_t mode = 0;
+      std::uint8_t rd = 0;
+      std::uint8_t rs = 0;
+
+      // NOP, HALT, RET - no operands
+      if (opcode == 0 || opcode == 1 || opcode == 20) {
+        std::uint16_t instr = make_instr_word(opcode, 0, 0, 0);
+        bytes.push_back(static_cast<std::uint8_t>(instr & 0xFF));
+        bytes.push_back(static_cast<std::uint8_t>((instr >> 8) & 0xFF));
       }
-      mode = 5; // PC-relative
-      std::uint16_t target;
-      if (l.operands[0].kind == Operand::Kind::Label) {
-        auto it = symbols.find(l.operands[0].text);
-        if (it == symbols.end()) {
+      // PUSH, POP - single register operand
+      else if (opcode == 21 || opcode == 22) {
+        if (l.operands.size() != 1 ||
+            l.operands[0].kind != Operand::Kind::Reg) {
           throw std::runtime_error(error_at_line(
-              l.line_number, "Undefined label: " + l.operands[0].text));
+              l.line_number, l.op + " expects one register operand"));
         }
-        target = it->second;
-      } else if (l.operands[0].kind == Operand::Kind::Number) {
-        target = parse_number16(l.operands[0].text);
-      } else {
-        throw std::runtime_error(error_at_line(
-            l.line_number, "Jump operand must be label or number"));
-      }
-      std::int32_t next_pc = static_cast<std::int32_t>(cur_addr) + 4;
-      std::int32_t offset = static_cast<std::int32_t>(target) - next_pc;
-      std::uint16_t off16 = static_cast<std::uint16_t>(offset & 0xFFFF);
-      std::uint16_t instr = make_instr_word(opcode, mode, 0, 0);
-      bytes.push_back(static_cast<std::uint8_t>(instr & 0xFF));
-      bytes.push_back(static_cast<std::uint8_t>((instr >> 8) & 0xFF));
-      bytes.push_back(static_cast<std::uint8_t>(off16 & 0xFF));
-      bytes.push_back(static_cast<std::uint8_t>((off16 >> 8) & 0xFF));
-    }
-    // Two-operand instructions (arithmetic, logic, data movement)
-    // MOV, LOAD, STORE, ADD, SUB, AND, OR, XOR, CMP, SHL, SHR, IN, OUT
-    else {
-      if (l.operands.size() != 2) {
-        throw std::runtime_error(
-            error_at_line(l.line_number, l.op + " expects two operands"));
-      }
-      if (l.operands[0].kind != Operand::Kind::Reg) {
-        throw std::runtime_error(error_at_line(
-            l.line_number, l.op + " first operand must be a register"));
-      }
-      rd = reg_id_from_name(l.operands[0].text);
-
-      // Determine addressing mode and encode
-      if (l.operands[1].kind == Operand::Kind::Reg) {
-        // Register mode
-        mode = 0;
-        rs = reg_id_from_name(l.operands[1].text);
-        std::uint16_t instr = make_instr_word(opcode, mode, rd, rs);
+        rd = reg_id_from_name(l.operands[0].text);
+        std::uint16_t instr = make_instr_word(opcode, 0, rd, 0);
         bytes.push_back(static_cast<std::uint8_t>(instr & 0xFF));
         bytes.push_back(static_cast<std::uint8_t>((instr >> 8) & 0xFF));
-      } else if (l.operands[1].kind == Operand::Kind::Imm) {
-        // Immediate mode
-        mode = 1;
-        std::uint16_t imm = parse_number16(l.operands[1].text);
-        std::uint16_t instr = make_instr_word(opcode, mode, rd, 0);
-        bytes.push_back(static_cast<std::uint8_t>(instr & 0xFF));
-        bytes.push_back(static_cast<std::uint8_t>((instr >> 8) & 0xFF));
-        bytes.push_back(static_cast<std::uint8_t>(imm & 0xFF));
-        bytes.push_back(static_cast<std::uint8_t>((imm >> 8) & 0xFF));
-      } else if (l.operands[1].kind == Operand::Kind::Label) {
-        // Label - treat as immediate address
-        auto it = symbols.find(l.operands[1].text);
-        if (it == symbols.end()) {
-          throw std::runtime_error(error_at_line(
-              l.line_number, "Undefined label: " + l.operands[1].text));
+      }
+      // Jumps and CALL - PC-relative with offset
+      else if (opcode >= 13 && opcode <= 19) {
+        if (l.operands.size() != 1) {
+          throw std::runtime_error(
+              error_at_line(l.line_number, l.op + " expects one operand"));
         }
-        mode = 1;
-        std::uint16_t imm = it->second;
-        std::uint16_t instr = make_instr_word(opcode, mode, rd, 0);
-        bytes.push_back(static_cast<std::uint8_t>(instr & 0xFF));
-        bytes.push_back(static_cast<std::uint8_t>((instr >> 8) & 0xFF));
-        bytes.push_back(static_cast<std::uint8_t>(imm & 0xFF));
-        bytes.push_back(static_cast<std::uint8_t>((imm >> 8) & 0xFF));
-      } else if (l.operands[1].kind == Operand::Kind::IndirectReg) {
-        // Register Indirect mode: [Reg]
-        mode = 3; // Mode 3 = Register Indirect
-        rs = reg_id_from_name(l.operands[1].text);
-        std::uint16_t instr = make_instr_word(opcode, mode, rd, rs);
-        bytes.push_back(static_cast<std::uint8_t>(instr & 0xFF));
-        bytes.push_back(static_cast<std::uint8_t>((instr >> 8) & 0xFF));
-      } else if (l.operands[1].kind == Operand::Kind::Direct) {
-        // Direct mode: [#Addr] or [Label]
-        mode = 2; // Mode 2 = Direct
-        std::uint16_t addr;
-        if (std::isdigit(l.operands[1].text[0])) {
-          addr = parse_number16(l.operands[1].text);
+        mode = 5; // PC-relative
+        std::uint16_t target;
+        if (l.operands[0].kind == Operand::Kind::Label) {
+          auto it = symbols.find(l.operands[0].text);
+          if (it == symbols.end()) {
+            throw std::runtime_error(error_at_line(
+                l.line_number, "Undefined label: " + l.operands[0].text));
+          }
+          target = it->second;
+        } else if (l.operands[0].kind == Operand::Kind::Number) {
+          target = parse_number16(l.operands[0].text);
         } else {
+          throw std::runtime_error(error_at_line(
+              l.line_number, "Jump operand must be label or number"));
+        }
+        std::int32_t next_pc = static_cast<std::int32_t>(cur_addr) + 4;
+        std::int32_t offset = static_cast<std::int32_t>(target) - next_pc;
+        std::uint16_t off16 = static_cast<std::uint16_t>(offset & 0xFFFF);
+        std::uint16_t instr = make_instr_word(opcode, mode, 0, 0);
+        bytes.push_back(static_cast<std::uint8_t>(instr & 0xFF));
+        bytes.push_back(static_cast<std::uint8_t>((instr >> 8) & 0xFF));
+        bytes.push_back(static_cast<std::uint8_t>(off16 & 0xFF));
+        bytes.push_back(static_cast<std::uint8_t>((off16 >> 8) & 0xFF));
+      }
+      // Two-operand instructions
+      else {
+        if (l.operands.size() != 2) {
+          throw std::runtime_error(
+              error_at_line(l.line_number, l.op + " expects two operands"));
+        }
+        if (l.operands[0].kind != Operand::Kind::Reg) {
+          throw std::runtime_error(error_at_line(
+              l.line_number, l.op + " first operand must be a register"));
+        }
+        rd = reg_id_from_name(l.operands[0].text);
+
+        // Determine addressing mode and encode
+        if (l.operands[1].kind == Operand::Kind::Reg) {
+          // Register mode
+          mode = 0;
+          rs = reg_id_from_name(l.operands[1].text);
+          std::uint16_t instr = make_instr_word(opcode, mode, rd, rs);
+          bytes.push_back(static_cast<std::uint8_t>(instr & 0xFF));
+          bytes.push_back(static_cast<std::uint8_t>((instr >> 8) & 0xFF));
+        } else if (l.operands[1].kind == Operand::Kind::Imm) {
+          // Immediate mode
+          mode = 1;
+          std::uint16_t imm = parse_number16(l.operands[1].text);
+          std::uint16_t instr = make_instr_word(opcode, mode, rd, 0);
+          bytes.push_back(static_cast<std::uint8_t>(instr & 0xFF));
+          bytes.push_back(static_cast<std::uint8_t>((instr >> 8) & 0xFF));
+          bytes.push_back(static_cast<std::uint8_t>(imm & 0xFF));
+          bytes.push_back(static_cast<std::uint8_t>((imm >> 8) & 0xFF));
+        } else if (l.operands[1].kind == Operand::Kind::Label) {
+          // Label - treat as immediate address
           auto it = symbols.find(l.operands[1].text);
           if (it == symbols.end()) {
             throw std::runtime_error(error_at_line(
                 l.line_number, "Undefined label: " + l.operands[1].text));
           }
-          addr = it->second;
+          mode = 1;
+          std::uint16_t imm = it->second;
+          std::uint16_t instr = make_instr_word(opcode, mode, rd, 0);
+          bytes.push_back(static_cast<std::uint8_t>(instr & 0xFF));
+          bytes.push_back(static_cast<std::uint8_t>((instr >> 8) & 0xFF));
+          bytes.push_back(static_cast<std::uint8_t>(imm & 0xFF));
+          bytes.push_back(static_cast<std::uint8_t>((imm >> 8) & 0xFF));
+        } else if (l.operands[1].kind == Operand::Kind::IndirectReg) {
+          // Register Indirect mode: [Reg]
+          mode = 3; // Mode 3 = Register Indirect
+          rs = reg_id_from_name(l.operands[1].text);
+          std::uint16_t instr = make_instr_word(opcode, mode, rd, rs);
+          bytes.push_back(static_cast<std::uint8_t>(instr & 0xFF));
+          bytes.push_back(static_cast<std::uint8_t>((instr >> 8) & 0xFF));
+        } else if (l.operands[1].kind == Operand::Kind::Direct) {
+          // Direct mode: [#Addr] or [Label]
+          mode = 2; // Mode 2 = Direct
+          std::uint16_t addr;
+          if (std::isdigit(l.operands[1].text[0])) {
+            addr = parse_number16(l.operands[1].text);
+          } else {
+            auto it = symbols.find(l.operands[1].text);
+            if (it == symbols.end()) {
+              throw std::runtime_error(error_at_line(
+                  l.line_number, "Undefined label: " + l.operands[1].text));
+            }
+            addr = it->second;
+          }
+          std::uint16_t instr = make_instr_word(opcode, mode, rd, 0);
+          bytes.push_back(static_cast<std::uint8_t>(instr & 0xFF));
+          bytes.push_back(static_cast<std::uint8_t>((instr >> 8) & 0xFF));
+          bytes.push_back(static_cast<std::uint8_t>(addr & 0xFF));
+          bytes.push_back(static_cast<std::uint8_t>((addr >> 8) & 0xFF));
+        } else {
+          throw std::runtime_error(error_at_line(
+              l.line_number, "Unsupported operand type for " + l.op));
         }
-        std::uint16_t instr = make_instr_word(opcode, mode, rd, 0);
-        bytes.push_back(static_cast<std::uint8_t>(instr & 0xFF));
-        bytes.push_back(static_cast<std::uint8_t>((instr >> 8) & 0xFF));
-        bytes.push_back(static_cast<std::uint8_t>(addr & 0xFF));
-        bytes.push_back(static_cast<std::uint8_t>((addr >> 8) & 0xFF));
-      } else {
-        throw std::runtime_error(error_at_line(
-            l.line_number, "Unsupported operand type for " + l.op));
       }
+    }
+
+    if (out_map && bytes.size() > start_size) {
+      std::vector<std::uint8_t> instr_bytes;
+      for (size_t k = start_size; k < bytes.size(); ++k)
+        instr_bytes.push_back(bytes[k]);
+
+      std::string src_line = "";
+      if (l.line_number > 0 && l.line_number <= (int)raw_source_lines.size()) {
+        src_line = raw_source_lines[l.line_number - 1];
+      }
+      out_map->push_back({cur_addr, l.line_number, src_line, instr_bytes});
     }
   }
 

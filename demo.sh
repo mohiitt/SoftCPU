@@ -47,6 +47,8 @@ echo -e "${YELLOW} Step 3: Generating execution traces...${NC}"
 
 # Create traces directory if it doesn't exist
 mkdir -p build/traces
+# Clean up old traces to prevent duplicates
+rm -f build/traces/*.json build/traces/*.map.json
 
 # Generate traces for different programs
 
@@ -73,20 +75,11 @@ echo ""
 
 # Generate trace manifest
 echo -e "${YELLOW} Generating trace manifest...${NC}"
-echo "[" > build/traces/traces.json
-first=true
-for f in build/traces/*.json; do
-    if [ "$f" != "build/traces/traces.json" ]; then
-        if [ "$first" = true ]; then
-            first=false
-        else
-            echo "," >> build/traces/traces.json
-        fi
-        filename=$(basename "$f")
-        echo "  \"$filename\"" >> build/traces/traces.json
-    fi
-done
-echo "]" >> build/traces/traces.json
+cat <<EOF > build/traces/traces.json
+[
+$(ls build/traces/*.json | grep -v "traces.json" | grep -v ".map.json" | xargs -n 1 basename | sed 's/^/"/;s/$/",/' | sed '$s/,$//')
+]
+EOF
 
 # Step 6: Launch trace viewer
 echo -e "${YELLOW} Step 5: Launching interactive trace viewer...${NC}"

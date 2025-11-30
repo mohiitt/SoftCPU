@@ -60,12 +60,13 @@ bool CPU::step() {
   try {
     // Fetch-Decode-Execute cycle
     static uint32_t cycle_count = 0;
+    uint16_t current_pc = registers_.get_pc();
     fetch();
     DecodedInstruction instr = decode();
 
     // Start trace cycle
     if (tracer_) {
-      tracer_->start_cycle(cycle_count, registers_.get_pc());
+      tracer_->start_cycle(cycle_count, current_pc);
       tracer_->record_registers(registers_);
       DecodedInstrView dv;
       dv.opcode = static_cast<uint8_t>(instr.opcode);

@@ -1,4 +1,5 @@
 let trace = [];
+let sourceMap = [];
 let currentCycle = 0;
 let isPlaying = false;
 let playInterval = null;
@@ -147,6 +148,7 @@ function loadTraceList() {
 // Load a specific trace file
 function loadTrace(filename, baseName) {
   const path = '../build/traces/' + filename;
+  const mapPath = path.replace('.json', '.map.json');
 
   fetch(path)
     .then(response => {
@@ -183,13 +185,71 @@ function loadTrace(filename, baseName) {
       newUrl.searchParams.set('trace', filename);
       window.history.pushState({}, '', newUrl);
 
-      render(0);
-      updateExecutionHistory(0);
+      // Load Source Map
+      fetch(mapPath)
+        .then(r => {
+          if (r.ok) return r.json();
+          return [];
+        })
+        .then(map => {
+          sourceMap = map;
+          renderCodeView();
+          render(0);
+          updateExecutionHistory(0);
+        })
+        .catch(e => {
+          console.log("No source map found");
+          sourceMap = [];
+          renderCodeView();
+          render(0);
+          updateExecutionHistory(0);
+        });
     })
     .catch(err => {
       console.error('Error loading trace:', err);
       alert('Failed to load trace: ' + filename);
     });
+}
+
+function renderCodeView() {
+  const container = document.getElementById('code-view');
+  if (!container) {
+    console.error('code-view container not found!');
+    return;
+  }
+
+  if (!sourceMap || sourceMap.length === 0) {
+    container.innerHTML = '<div style="color: #94a3b8; text-align: center; padding: 40px; background: rgba(148, 163, 184, 0.1); border-radius: 8px; border: 2px dashed #475569;"><p style="margin: 0; font-size: 1rem;">📝 No source code available for this trace.</p><p style="margin: 10px 0 0 0; font-size: 0.85rem; opacity: 0.7;">Source maps are generated during assembly.</p></div>';
+    return;
+  }
+
+  let html = '';
+  sourceMap.forEach((entry, idx) => {
+    let bytesStr = '';
+    if (entry.bytes && entry.bytes.length > 0) {
+      bytesStr = entry.bytes.map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
+    }
+
+    let addrStr = entry.address !== undefined ? '0x' + entry.address.toString(16).padStart(4, '0').toUpperCase() : '';
+
+    html += `<div class="code-line" id="code-line-${idx}" data-addr="${entry.address}">
+            <span class="line-num">${entry.line}</span>
+            <span class="line-addr">${addrStr}</span>
+            <span class="line-bytes">${bytesStr}</span>
+            <span class="line-src">${escapeHtml(entry.source)}</span>
+        </div>`;
+  });
+  container.innerHTML = html;
+}
+
+function escapeHtml(text) {
+  if (!text) return '';
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 // Playback control functions
@@ -397,6 +457,39 @@ Extra:  ${formatValue(c.instr.extra, 4)}</pre>`;
     memHtml += '<p style="color: var(--text-secondary); font-style: italic;">No memory writes this cycle</p>';
   }
   document.getElementById('mem').innerHTML = memHtml;
+
+  // Highlight Code
+  if (sourceMap.length > 0) {
+    // Parse PC from trace (format "0x1234")
+    let pcVal = 0;
+    if (typeof c.pc === 'string') pcVal = parseInt(c.pc, 16);
+    else pcVal = c.pc;
+
+    // Remove active class
+    document.querySelectorAll('.code-line.active').forEach(el => el.classList.remove('active'));
+
+    // Find lines with this address
+    const lines = document.querySelectorAll(`.code-line[data-addr="${pcVal}"]`);
+    if (lines.length > 0) {
+      // Prefer the last one (usually the instruction, after labels)
+      const el = lines[lines.length - 1];
+      el.classList.add('active');
+
+      // Scroll within the code-view container only, not the entire page
+      const codeView = document.getElementById('code-view');
+      if (codeView) {
+        const elTop = el.offsetTop;
+        const elHeight = el.offsetHeight;
+        const containerHeight = codeView.clientHeight;
+        const scrollTop = codeView.scrollTop;
+
+        // Only scroll if element is not visible in the container
+        if (elTop < scrollTop || elTop + elHeight > scrollTop + containerHeight) {
+          codeView.scrollTop = elTop - (containerHeight / 2) + (elHeight / 2);
+        }
+      }
+    }
+  }
 }
 
 function toHexNumber(v, width = 4) {
