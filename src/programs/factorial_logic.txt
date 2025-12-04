@@ -1,0 +1,442 @@
+================================================================================
+FACTORIAL FUNCTION - ASSEMBLY PSEUDOCODE AND LOGIC DESIGN
+================================================================================
+
+Author: Jainil (The Algorithmist)
+Phase: 2 - Function Calls, Stack Frames, and Recursion
+Task: 2.2 - Design the Factorial Logic (Assembly Pseudocode)
+
+Purpose:
+  This document provides detailed pseudocode and logic for implementing the
+  recursive factorial function in assembly language for the Software CPU.
+  This will be used by the Implementer (Task 3) to write factorial.asm.
+
+================================================================================
+OVERVIEW
+================================================================================
+
+Function Signature:
+  factorial(n) -> n!
+  
+Arguments:
+  R0 = n (the number to compute factorial of)
+  
+Returns:
+  R0 = n! (the factorial of n)
+  
+Mathematical Definition:
+  factorial(0) = 1
+  factorial(1) = 1
+  factorial(n) = n × factorial(n-1)  for n > 1
+
+Algorithm Type:
+  Recursive with base case
+
+Dependencies:
+  - multiply function from math.asm
+  - Stack operations (PUSH, POP, CALL, RET)
+  - Calling convention from docs/function_calls_stack_frames.md
+
+================================================================================
+CALLING CONVENTION REVIEW
+================================================================================
+
+Register Roles (from ABI):
+  R0 - First argument / Return value (caller-saved)
+  R1 - Second argument / Temporary (caller-saved)
+  R2 - Third argument / Temporary (caller-saved)
+  R3 - Frame Pointer (callee-saved)
+
+Caller Responsibilities:
+  1. Place argument in R0
+  2. Save any caller-saved registers (R0-R2) if needed after call
+  3. Execute CALL instruction
+  4. Retrieve result from R0
+
+Callee Responsibilities:
+  1. Save callee-saved registers if used (R3)
+  2. Execute function body
+  3. Place return value in R0
+  4. Restore callee-saved registers
+  5. Execute RET instruction
+
+Stack Frame Structure:
+  Higher Addresses
+  ┌─────────────────────────┐
+  │   Return Address (PC)   │  ← Pushed by CALL instruction
+  ├─────────────────────────┤
+  │   Saved R3 (FP)         │  ← Pushed by function prologue (if needed)
+  ├─────────────────────────┤
+  │   Saved n value         │  ← Saved before recursive call
+  ├─────────────────────────┤
+  │   Local variables       │  ← Space for temporaries
+  └─────────────────────────┘  ← Current SP
+  Lower Addresses
+
+================================================================================
+FACTORIAL FUNCTION - DETAILED PSEUDOCODE
+================================================================================
+
+; ------------------------------------------------------------------------------
+; factorial - Recursive factorial calculation
+; ------------------------------------------------------------------------------
+; Arguments: R0 = n
+; Returns:   R0 = n!
+; ------------------------------------------------------------------------------
+
+factorial:
+    ; ==========================================================================
+    ; PROLOGUE
+    ; ==========================================================================
+    ; Save the frame pointer (R3) as it is callee-saved
+    ; Note: We could skip this for a simpler implementation since we don't
+    ; strictly need a frame pointer for this function, but it's good practice
+    
+    PUSH R3                     ; Save caller's frame pointer
+    MOV R3, SP                  ; Set up our frame pointer (optional)
+    
+    ; ==========================================================================
+    ; BASE CASE CHECK: if (n <= 1) return 1
+    ; ==========================================================================
+    ; We need to check if n is 0 or 1, both return 1
+    ; Strategy: Use CMP to check if n <= 1
+    
+    CMP R0, #1                  ; Compare n with 1
+    JZ base_case                ; If n == 1, jump to base case
+    ; Note: For unsigned comparison, if n == 0, the comparison with 1 
+    ; will set appropriate flags. We may need to check n == 0 separately
+    ; depending on how we want to handle edge cases.
+    
+    ; Alternative base case check (more explicit):
+    ; CMP R0, #0
+    ; JZ base_case                ; If n == 0, return 1
+    ; CMP R0, #1
+    ; JZ base_case                ; If n == 1, return 1
+    
+    ; For simplicity, we'll check if n <= 1 using a single comparison
+    ; If we're here, n must be > 1, so proceed with recursive case
+    
+    ; Check if n == 0 separately (safety check)
+    CMP R0, #0
+    JZ base_case                ; If n == 0, return 1
+    
+    ; Now check if n == 1
+    CMP R0, #1
+    JZ base_case                ; If n == 1, return 1
+    
+    ; ==========================================================================
+    ; RECURSIVE CASE: n > 1
+    ; ==========================================================================
+    ; We need to compute: n! = n × (n-1)!
+    ; This requires:
+    ;   1. Save current n (we'll need it after the recursive call)
+    ;   2. Compute (n-1)! recursively
+    ;   3. Multiply n by (n-1)!
+    
+    ; --------------------------------------------------------------------------
+    ; Step 1: Save current value of n
+    ; --------------------------------------------------------------------------
+    ; We must save n because:
+    ;   a) The recursive call will overwrite R0
+    ;   b) We need the original n value to multiply with the result
+    
+    PUSH R0                     ; Save n on the stack
+    
+    ; --------------------------------------------------------------------------
+    ; Step 2: Prepare argument for recursive call: n-1
+    ; --------------------------------------------------------------------------
+    
+    SUB R0, #1                  ; R0 = n - 1
+    
+    ; --------------------------------------------------------------------------
+    ; Step 3: Make recursive call to factorial(n-1)
+    ; --------------------------------------------------------------------------
+    ; After this call:
+    ;   - R0 will contain (n-1)!
+    ;   - Stack will have our saved n value
+    ;   - Return address is automatically pushed by CALL
+    
+    CALL factorial              ; R0 = factorial(n-1)
+    
+    ; --------------------------------------------------------------------------
+    ; Step 4: Restore the original n value
+    ; --------------------------------------------------------------------------
+    ; At this point:
+    ;   - R0 contains (n-1)! 
+    ;   - We need to get our original n back
+    ;   - We'll pop it into R1 (R1 is caller-saved, safe to use)
+    
+    POP R1                      ; R1 = original n (from stack)
+    
+    ; --------------------------------------------------------------------------
+    ; Step 5: Multiply n by (n-1)!
+    ; --------------------------------------------------------------------------
+    ; We need to compute: n × (n-1)!
+    ; Currently:
+    ;   - R1 = n
+    ;   - R0 = (n-1)!
+    ; 
+    ; The multiply function signature is:
+    ;   multiply(a, b) with a in R0, b in R1, returns result in R0
+    ; 
+    ; So we need: R0 = n, R1 = (n-1)!
+    ; But we have: R0 = (n-1)!, R1 = n
+    ; 
+    ; Solution: Swap them or adjust the multiply call
+    ; Since multiply(a, b) = a * b = b * a (commutative),
+    ; we can call multiply with R0=(n-1)! and R1=n
+    ; 
+    ; Actually, let's check the multiply function signature:
+    ; multiply expects: R0 = a, R1 = b, returns R0 = a * b
+    ; 
+    ; We want: n × (n-1)!
+    ; So we need: R0 = n, R1 = (n-1)!
+    ; Currently: R0 = (n-1)!, R1 = n
+    ; 
+    ; We need to swap R0 and R1
+    
+    ; Swap R0 and R1 using R2 as temporary
+    MOV R2, R0                  ; R2 = (n-1)! (save factorial result)
+    MOV R0, R1                  ; R0 = n
+    MOV R1, R2                  ; R1 = (n-1)!
+    
+    ; Now: R0 = n, R1 = (n-1)!
+    ; Call multiply to get n × (n-1)!
+    
+    CALL multiply               ; R0 = n × (n-1)! = n!
+    
+    ; --------------------------------------------------------------------------
+    ; Step 6: Result is now in R0, jump to epilogue
+    ; --------------------------------------------------------------------------
+    
+    JMP factorial_epilogue      ; Jump to cleanup and return
+    
+    ; ==========================================================================
+    ; BASE CASE: return 1
+    ; ==========================================================================
+    
+base_case:
+    MOV R0, #1                  ; Return value = 1
+    ; Fall through to epilogue
+    
+    ; ==========================================================================
+    ; EPILOGUE
+    ; ==========================================================================
+    
+factorial_epilogue:
+    ; R0 contains the return value (n!)
+    ; Restore callee-saved registers
+    
+    MOV SP, R3                  ; Restore stack pointer (if we allocated locals)
+                                ; In our case, we didn't allocate, but this is
+                                ; good practice for consistency
+    
+    POP R3                      ; Restore caller's frame pointer
+    
+    RET                         ; Return to caller (R0 contains result)
+
+
+================================================================================
+REGISTER USAGE SUMMARY
+================================================================================
+
+During function execution:
+  R0 - Input: n, during recursion: n-1, (n-1)!, finally: n!
+  R1 - Temporary: saved n value, arguments for multiply
+  R2 - Temporary: swap operations
+  R3 - Frame pointer (saved and restored)
+
+Stack usage per call:
+  - Return address (2 bytes) - pushed by CALL
+  - Saved R3 (2 bytes) - pushed by prologue
+  - Saved n (2 bytes) - pushed before recursive call
+  Total: ~6 bytes per recursive call
+
+For factorial(5):
+  - 5 levels of recursion
+  - Total stack usage: ~30 bytes
+  - Well within the 28 KB stack limit
+
+================================================================================
+ALTERNATIVE IMPLEMENTATION (Simplified - No Frame Pointer)
+================================================================================
+
+If we want a simpler implementation without frame pointer management:
+
+factorial_simple:
+    ; Check base case
+    CMP R0, #0
+    JZ base_case_simple
+    CMP R0, #1
+    JZ base_case_simple
+    
+    ; Recursive case
+    PUSH R0                     ; Save n
+    SUB R0, #1                  ; n-1
+    CALL factorial_simple       ; factorial(n-1) -> R0
+    POP R1                      ; Restore n to R1
+    
+    ; Swap for multiply: need R0=n, R1=(n-1)!
+    MOV R2, R0                  ; R2 = (n-1)!
+    MOV R0, R1                  ; R0 = n
+    MOV R1, R2                  ; R1 = (n-1)!
+    
+    CALL multiply               ; R0 = n!
+    RET
+    
+base_case_simple:
+    MOV R0, #1
+    RET
+
+================================================================================
+EXECUTION TRACE FOR factorial(5)
+================================================================================
+
+Call Stack Visualization:
+-------------------------------------------------
+Initial: SP = 0x7FFF
+
+Call factorial(5):
+  CALL pushes return address
+  SP = 0x7FFD: [return to main]
+  PUSH R3
+  SP = 0x7FFB: [saved R3]
+  PUSH R0 (n=5)
+  SP = 0x7FF9: [n=5]
+
+  Call factorial(4):
+    SP = 0x7FF7: [return to factorial]
+    SP = 0x7FF5: [saved R3]
+    SP = 0x7FF3: [n=4]
+    
+    Call factorial(3):
+      SP = 0x7FF1: [return to factorial]
+      SP = 0x7FEF: [saved R3]
+      SP = 0x7FED: [n=3]
+      
+      Call factorial(2):
+        SP = 0x7FEB: [return to factorial]
+        SP = 0x7FE9: [saved R3]
+        SP = 0x7FE7: [n=2]
+        
+        Call factorial(1):
+          SP = 0x7FE5: [return to factorial]
+          SP = 0x7FE3: [saved R3]
+          
+          Base case: return 1
+          R0 = 1
+          
+        Return to factorial(2):
+          R0 = 1 (factorial(1))
+          R1 = 2 (restored n)
+          multiply(2, 1) = 2
+          R0 = 2
+          
+      Return to factorial(3):
+        R0 = 2 (factorial(2))
+        R1 = 3 (restored n)
+        multiply(3, 2) = 6
+        R0 = 6
+        
+    Return to factorial(4):
+      R0 = 6 (factorial(3))
+      R1 = 4 (restored n)
+      multiply(4, 6) = 24
+      R0 = 24
+      
+  Return to factorial(5):
+    R0 = 24 (factorial(4))
+    R1 = 5 (restored n)
+    multiply(5, 24) = 120
+    R0 = 120
+    
+Return to main:
+  R0 = 120
+  SP = 0x7FFF (stack fully restored)
+
+================================================================================
+INTEGRATION WITH MATH.ASM
+================================================================================
+
+The factorial function depends on the multiply function from math.asm.
+
+Integration approach:
+1. In the main program, include both math.asm and factorial.asm
+2. Ensure multiply is defined before factorial calls it
+3. Both functions follow the same calling convention
+
+Example main program structure:
+
+    .org 0x8000
+    
+    main:
+        ; Initialize (SP automatically set to 0x7FFF)
+        
+        ; Compute factorial(5)
+        MOV R0, #5
+        CALL factorial
+        
+        ; Store result
+        MOV R1, #0x0200
+        STORE R0, [R1]
+        
+        HALT
+    
+    ; Include the multiply function
+    ; (Contents of math.asm would go here)
+    
+    ; Include the factorial function
+    ; (Contents of factorial.asm would go here)
+
+================================================================================
+TESTING AND VERIFICATION
+================================================================================
+
+Test Cases:
+1. factorial(0) should return 1
+2. factorial(1) should return 1
+3. factorial(2) should return 2
+4. factorial(3) should return 6
+5. factorial(4) should return 24
+6. factorial(5) should return 120
+
+Verification checks:
+- Final result in R0 matches expected value
+- Stack pointer (SP) returns to 0x7FFF after completion
+- No stack corruption (all pushed values properly popped)
+- Trace shows correct recursion depth (5 levels for factorial(5))
+
+Memory locations for results:
+- Store factorial(5) result at 0x0200
+- Expected: Memory[0x0200] = 0x0078 (120 in hex)
+
+================================================================================
+NOTES FOR IMPLEMENTER (Task 3)
+================================================================================
+
+1. This pseudocode is very detailed but can be simplified based on actual
+   assembler capabilities and constraints.
+
+2. The frame pointer (R3) management is optional for this simple function,
+   but good practice for more complex functions.
+
+3. Register swapping before the multiply call ensures the correct operand
+   order. Alternatively, modify the order or use multiplication's commutative
+   property if the implementation allows.
+
+4. Error handling: Consider what should happen for negative inputs or very
+   large inputs that would cause overflow. For this project, we assume valid
+   inputs (0 <= n <= 12) to avoid 16-bit overflow (13! > 2^16).
+
+5. The base case checks could be optimized to a single comparison if we
+   know n will always be non-negative.
+
+6. Stack management is CRITICAL. Every PUSH must have a matching POP, and
+   they must be in LIFO order.
+
+7. Use trace generation tools to verify the recursion is working correctly
+   and the stack is being managed properly.
+
+================================================================================
+END OF FACTORIAL LOGIC PSEUDOCODE
+================================================================================
