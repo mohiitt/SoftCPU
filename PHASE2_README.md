@@ -21,11 +21,11 @@ This phase implements support for function calls, stack frames, and recursion in
 1. ⏳ Implement `multiply(a, b)` subroutine
 2. ⏳ Design factorial logic (C reference and assembly pseudocode)
 
-### 🔄 Task 3: The Implementer (Shri) - PENDING
+### ✅ Task 3: The Implementer (Shri) - COMPLETE
 
 **Deliverables:**
-1. ⏳ Implement `factorial(n)` in assembly
-2. ⏳ Generate execution traces
+1. ✅ Implement `factorial(n)` in assembly
+2. ✅ Generate execution traces
 
 ### 🔄 Task 4: The Integrator (Charles) - PENDING
 
@@ -336,9 +336,9 @@ Result:      R0 = 120
 ## Success Criteria
 
 - ✅ All unit tests pass
-- ⏳ Factorial(5) returns 120
-- ⏳ Stack properly managed (no corruption)
-- ⏳ Trace shows correct execution flow
+- ✅ Factorial(5) returns 120
+- ✅ Stack properly managed (no corruption)
+- ✅ Trace shows correct execution flow
 - ⏳ Memory snapshot shows stack frames
 - ⏳ Documentation complete
 
