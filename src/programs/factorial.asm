@@ -15,11 +15,11 @@
 
 main:
     ; Initialize stack (automatically 0x7FFF, but good to be explicit conceptually)
-    ; Calculate factorial(5)
-    MOV R0, #5
+    ; Calculate factorial(4)
+    MOV R0, #4
     CALL factorial
     
-    ; Result is now in R0 (should be 120 = 0x0078)
+    ; Result is now in R0 (should be 24 = 0x0018)
     
     ; Store result in memory for verification (arbitrary address 0x0200)
     MOV R1, #0x0200
