@@ -1,39 +1,40 @@
-# Phase 2: Function Calls, Stack Frames, and Recursion - COMPLETE ✅
+# Recursive Program Layout & Execution
 
 ## Overview
 
 This phase implements support for function calls, stack frames, and recursion in the Software CPU. A recursive factorial function demonstrates how the CPU handles function calls and manages the stack.
 
-## Project Status: ALL TASKS COMPLETE ✅
 
-### ✅ Task 1: The Architect (Mohit)
-- ✅ Updated Memory Map (`docs/architecture/memory_map.md`)
-- ✅ Calling Convention Documentation (`docs/function_calls_stack_frames.md`)
-- ✅ Stack Test Verification (`tests/assembly/test_stack.asm`)
+## Quick Start Demo
 
-### ✅ Task 2: The Algorithmist (Jainil)
-- ✅ Implemented `multiply(a, b)` subroutine (`src/programs/math.asm`)
-- ✅ Designed factorial logic (`src/programs/factorial.c`, `factorial_logic.txt`)
-
-### ✅ Task 3: The Implementer (Shri)
-- ✅ Implemented `factorial(n)` in assembly (`src/programs/factorial.asm`)
-- ✅ Generated execution traces with trace viewer
-
-### ✅ Task 4: The Integrator (Mohit & Charles)
-- ✅ Implemented `main` program with factorial calls
-- ✅ Created interactive trace viewer with memory visualization
-- ✅ Final integration and verification complete
-
-## Quick Start
-
-### Run the Demo
-
+**One-command demo for new users:**
+**Note: All commands are for Mac/Linux**
 ```bash
-# Run complete demo with trace viewer
-./demo.sh
+# Clone the repository
+git clone <https://github.com/JNR-10/software-cpu>
+cd software-cpu
 
-# Then open browser to: http://localhost:8000/trace_viewer/
+#Download these dependices
+WSL:
+  sudo apt-get install -y jq
+  sudo apt-get install -y dos2unix
+Mac:
+  brew install jq 
+  brew install dos2unix
+
+# Run the complete interactive demo
+chmod +x demo.sh
+dos2unix ./scripts/*.sh
+dos2unix ./demo.sh
+./demo.sh
 ```
+
+This will:
+1. Build the entire project
+2. Run unit tests
+3. Generate execution traces for multiple programs including factorial recursion
+4. Launch the interactive web-based trace viewer
+5. Open your browser automatically to visualize CPU execution
 
 ### Run Individual Programs
 
@@ -41,11 +42,34 @@ This phase implements support for function calls, stack frames, and recursion in
 # Build the project
 make all
 
-# Run factorial program
-./scripts/run_general.sh src/programs/factorial.asm
+#Unit Tests
+make test
 
-# Generate trace
+
+
+# Assemble factorial
+dos2unix ./bin/software-cpu assemble src/programs/factorial.asm build/fact.bin
+./bin/software-cpu assemble src/programs/factorial.asm build/fact.bin
+
+# Run factorial calculation
+dos2unix ./bin/software-cpu run build/fact.bin
+./bin/software-cpu run build/fact.bin
+
+# Interactive debugging
+dos2unix ./bin/software-cpu debug build/fact.bin
+./bin/software-cpu debug build/fact.bin
+
+# Generate trace 
+dos2unix ./scripts/run_general_with_trace.sh src/programs/factorial.asm factorial_trace.json
 ./scripts/run_general_with_trace.sh src/programs/factorial.asm factorial_trace.json
+
+# Integration test
+dos2unix ./scripts/run_general.sh tests/assembly/test_integration.asm
+./scripts/run_general.sh tests/assembly/test_integration.asm
+
+# Factorial example
+dos2unix ./scripts/run_general.sh src/programs/factorial.asm
+./scripts/run_general.sh src/programs/factorial.asm
 ```
 
 ## Architecture Summary
@@ -113,18 +137,6 @@ The trace viewer provides real-time visualization of CPU execution:
 - **File**: `src/programs/factorial.c`
 - **Purpose**: C reference for verification
 
-## Verification Results
-
-### All Tests Pass ✅
-- ✅ Stack operations (PUSH/POP)
-- ✅ Function calls (CALL/RET)
-- ✅ Multiplication function
-- ✅ Factorial base cases (0! = 1, 1! = 1)
-- ✅ Factorial recursive cases (5! = 120)
-- ✅ Stack properly managed (no overflow)
-- ✅ Registers properly saved/restored
-- ✅ Trace shows correct recursion depth
-
 ### Factorial(5) Execution
 ```
 factorial(5) = 5 * factorial(4)
@@ -132,7 +144,7 @@ factorial(5) = 5 * factorial(4)
              = 5 * 4 * 3 * factorial(2)
              = 5 * 4 * 3 * 2 * factorial(1)
              = 5 * 4 * 3 * 2 * 1
-             = 120 ✅
+             = 120
 ```
 
 ### Stack Evolution
@@ -144,33 +156,7 @@ Call f(3):   SP = 0x7FF5 (return addr), 0x7FF3 (saved n=3)
 Call f(2):   SP = 0x7FF1 (return addr), 0x7FEF (saved n=2)
 Call f(1):   SP = 0x7FED (return addr) → Returns 1
 Unwind...    SP returns to 0x7FFF
-Result:      R0 = 120 ✅
+Result:      R0 = 120 
 ```
 
-## Documentation
 
-- **Memory Map**: `docs/architecture/memory_map.md`
-- **ISA Reference**: `docs/architecture/ISA.md`
-- **Function Calls & Stack Frames**: `docs/function_calls_stack_frames.md`
-- **Task Summaries**: `docs/task*_summary.md`
-
-## Tools
-
-- `./demo.sh` - Complete demo with trace viewer
-- `./scripts/run_general.sh` - Run assembly programs
-- `./scripts/run_general_with_trace.sh` - Generate execution traces
-- `trace_viewer/` - Interactive web-based trace visualization
-
-## Success Criteria - ALL MET ✅
-
-- ✅ All unit tests pass
-- ✅ Factorial(5) returns 120
-- ✅ Stack properly managed (no corruption)
-- ✅ Trace shows correct execution flow
-- ✅ Memory visualization shows stack frames
-- ✅ Documentation complete
-- ✅ Interactive trace viewer functional
-
----
-
-**Phase 2 Status**: ✅ COMPLETE - All tasks finished and verified

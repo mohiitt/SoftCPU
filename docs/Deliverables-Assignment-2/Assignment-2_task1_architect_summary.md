@@ -1,11 +1,11 @@
 # Task 1 - The Architect: Implementation Summary
 
-**Assigned to:** Mohit  
+**Name:** Mohit  
 **Focus:** Memory Layout, Stack Mechanics, and ABI (Application Binary Interface)
 
 ## Completed Deliverables
 
-### 1. Task 1.1: Define the Memory Map ✅
+### 1. Task 1.1: Define the Memory Map 
 
 **File:** `docs/architecture/memory_map.md`
 
@@ -23,7 +23,7 @@
 
 - Added recursion example showing stack evolution for `factorial(5)`
 
-### 2. Task 1.2: Define the Calling Convention ✅
+### 2. Task 1.2: Define the Calling Convention 
 
 **File:** `docs/function_calls_stack_frames.md`
 
@@ -92,27 +92,27 @@ Lower Addresses (0x1000)
 - Best practices and common pitfalls
 - Complete function template
 
-### 3. Task 1.3: Create Stack Test Verification ✅
+### 3. Task 1.3: Create Stack Test Verification 
 
 **File:** `tests/assembly/test_stack.asm`
 
 **Test Coverage:**
-1. ✅ **PUSH/POP Operations**
+1.  **PUSH/POP Operations**
    - Pushes three values (0xAAAA, 0xBBBB, 0xCCCC)
    - Pops them back in reverse order (LIFO)
    - Verifies values match
 
-2. ✅ **CALL/RET Mechanism**
+2.  **CALL/RET Mechanism**
    - Calls a simple function
    - Verifies return address is saved and restored
    - Verifies function can modify R0 and return
 
-3. ✅ **Nested Function Calls**
+3.  **Nested Function Calls**
    - Tests calling a function from within another function
    - Verifies stack is properly maintained
    - Tests function that adds two numbers (100 + 200 = 300)
 
-4. ✅ **Stack Pointer Verification**
+4.  **Stack Pointer Verification**
    - Implicitly verified by successful PUSH/POP operations
    - SP automatically initialized to 0x7FFF
    - SP properly restored after all operations
@@ -161,16 +161,16 @@ Final State:
 ## Architecture Verification
 
 ### Hardware Stack Operations (Verified)
-- ✅ PUSH: Pre-decrements SP by 2, then stores value
-- ✅ POP: Loads value, then post-increments SP by 2
-- ✅ CALL: Pushes PC (return address), then jumps
-- ✅ RET: Pops PC (return address), then jumps back
+-  PUSH: Pre-decrements SP by 2, then stores value
+-  POP: Loads value, then post-increments SP by 2
+-  CALL: Pushes PC (return address), then jumps
+-  RET: Pops PC (return address), then jumps back
 
 ### Memory Layout (Verified)
-- ✅ Stack starts at 0x7FFF
-- ✅ Stack grows downward
-- ✅ Code loads at 0x8000
-- ✅ Data segment at 0x0000-0x0FFF available
+-  Stack starts at 0x7FFF
+-  Stack grows downward
+-  Code loads at 0x8000
+-  Data segment at 0x0000-0x0FFF available
 
 ## Next Steps for Team
 
@@ -194,18 +194,14 @@ Final State:
 
 ## Files Created/Modified
 
-1. ✅ `docs/architecture/memory_map.md` - Updated with Phase 2 details
-2. ✅ `docs/function_calls_stack_frames.md` - Complete calling convention documentation
-3. ✅ `tests/assembly/test_stack.asm` - Stack verification test (PASSED)
+1.  `docs/architecture/memory_map.md` - Updated with Phase 2 details
+2.  `docs/function_calls_stack_frames.md` - Complete calling convention documentation
+3.  `tests/assembly/test_stack.asm` - Stack verification test (PASSED)
 
 ## Conclusion
-
-Task 1 (The Architect) is **COMPLETE** and **VERIFIED**. All deliverables have been created, documented, and tested. The memory layout, calling convention, and stack mechanics are fully defined and ready for the team to implement the recursive factorial function.
 
 The stack test successfully demonstrates:
 - Correct PUSH/POP behavior
 - Proper CALL/RET mechanism
 - Stack pointer management
 - Nested function calls
-
-The architecture is sound and ready for Phase 2 implementation.
