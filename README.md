@@ -163,35 +163,11 @@ dos2unix ./bin/software-cpu debug build/fib.bin
 | `math.asm` | Multiplication using shift-and-add | Algorithm implementation |
 | `timer_example.asm` | Timer functionality | Memory-mapped I/O |
 
-### Factorial (Recursive)
-- **File**: `src/programs/factorial.asm`
-- **Features**: Recursive implementation with stack frames
-- **Test Cases**: factorial(5) = 120, factorial(10) = 3628800
-- **Trace**: Shows complete recursion depth and stack evolution
-
-### Factorial(5) Execution
-```
-factorial(5) = 5 * factorial(4)
-             = 5 * 4 * factorial(3)
-             = 5 * 4 * 3 * factorial(2)
-             = 5 * 4 * 3 * 2 * factorial(1)
-             = 5 * 4 * 3 * 2 * 1
-             = 120
-```
-
-### Stack Evolution
-```
-Initial:     SP = 0x7FFF
-Call f(5):   SP = 0x7FFD (return addr), 0x7FFB (saved n=5)
-Call f(4):   SP = 0x7FF9 (return addr), 0x7FF7 (saved n=4)
-Call f(3):   SP = 0x7FF5 (return addr), 0x7FF3 (saved n=3)
-Call f(2):   SP = 0x7FF1 (return addr), 0x7FEF (saved n=2)
-Call f(1):   SP = 0x7FED (return addr) → Returns 1
-Unwind...    SP returns to 0x7FFF
-Result:      R0 = 120 
-```
-
 ## Interactive Trace Viewer
+
+![alt text](image.png)
+
+![alt text](image-1.png)
 
 The web-based trace viewer provides real-time visualization of CPU execution:
 
@@ -231,6 +207,3 @@ Due to the large file size, the demo videos have been shared via Google Drive:
 - **Complete Project Demo**: https://drive.google.com/drive/folders/1WXGD3DoWew3UzMFoogyRmkAdpkCSQswJ?usp=share_link
 - **Recursive Program Demo**: https://drive.google.com/file/d/1NMPQEUwPOpoAF20DEVWsYW85T0YgU13j/view
 
-## Screenshots : 
-![alt text](image.png)
-![alt text](image-1.png)
